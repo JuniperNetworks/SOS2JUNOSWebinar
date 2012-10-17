@@ -1,0 +1,90 @@
+/* Machine Crafted with Care (tm) by slaxWriter */
+version 1.0;
+
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns ext = "http://xmlsoft.org/XSLT/namespace";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+ns func extension = "http://exslt.org/functions";
+ns dyn extension = "http://exslt.org/dynamic";
+ns local = "http://xml.juniper.net/local";
+
+import "../import/junos.xsl";
+/* ma ke a connection to the local device */
+var $connection = jcs:open();
+
+match / {
+    /* RPC to excecute */
+    var $command-rpc = <rpc> {
+        <get-interface-information> ;
+    }
+    /* run command and collect results */
+    var $command-results = jcs:execute($connection, $command-rpc);
+    /* process results */
+    <op-script-results> {
+        <output> {
+            expr jcs:printf("%-15s %-25s %-11s %-17s %-5s", "Name", "IP Address", "Zone", "MAC", "State");
+            
+            for-each ($command-results/physical-interface) {
+                /* check for banned interfaces */
+                if (./if-type == "Adaptive-Services") {
+                    /* do nothing this is annoying */
+                
+                } else {
+                    /* now we are itterating through each element in interface information */
+                    var $name = ./name;
+                    var $state = ./oper-status;
+                    var $current-physical-address = {
+                        if (./current-physical-address != "") {
+                            expr ./current-physical-address;
+                        
+                        } else {
+                            expr "N/A" _ "";
+                        }
+                    }
+                    /* <xsl:value-of select="jcs:printf('%-15s %-25s %-11s %-17s %-5s\n',$name,'N/A','N/A','N/A',$state)"/> */
+                    
+                    for-each (./logical-interface) {
+                        if (./name == "lo0.16384") {
+                            /* do nothing this is annoying */
+                        
+                        } else if (./name == "lo0.16385") {
+                            /* do nothing this is annoying */
+                        
+                        } else if (./name == "lo0.32768") {
+                            /* do nothing this is annoying */
+                        
+                        } else {
+                            var $logical-name = ./name;
+                            var $logical-interface-zone-name = ./logical-interface-zone-name;
+                            var $ip-address = ./address-family/interface-address/ifa-local;
+                            var $mask = {
+                                if (./address-family/interface-address/ifa-destination != "") {
+                                    if (substring-after(./address-family/interface-address/ifa-destination,"/")) {
+                                        expr "/" _ substring-after(./address-family/interface-address/ifa-destination,"/");
+                                    
+                                    } else {
+                                    }
+                                
+                                } else {
+                                    expr "" _ "";
+                                }
+                            }
+                            var $full-address = {
+                                if ($ip-address != "") {
+                                    expr $ip-address _ $mask;
+                                
+                                } else {
+                                    expr "N/A" _ "";
+                                }
+                            }
+                            
+                            expr jcs:printf("%-15s %-25s %-11s %-17s %-5s", $logical-name, $full-address, $logical-interface-zone-name, $current-physical-address, $state);
+                        }
+                        /* itterate through the logical interface nodes */
+                    }
+                }
+            }
+        }
+    }
+}
