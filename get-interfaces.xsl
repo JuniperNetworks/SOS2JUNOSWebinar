@@ -53,6 +53,9 @@
                             <xsl:when test="./name = 'lo0.32768'">
                                 <!-- do nothing this is annoying -->
                             </xsl:when>
+                            <xsl:when test="./name = 'fxp1.0'">
+                                <!-- do nothing -->
+                            </xsl:when>
                             <xsl:otherwise>
                                 <xsl:variable name="logical-name" select="./name"/>
                                 <xsl:variable name="logical-interface-zone-name" select="./logical-interface-zone-name"/>
